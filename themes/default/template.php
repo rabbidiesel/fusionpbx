@@ -13,6 +13,7 @@
 <meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+<meta name="robots" content="noindex, nofollow, noarchive" />
 
 {*//external css files *}
 	<link rel='stylesheet' type='text/css' href='{$project_path}/resources/bootstrap/css/bootstrap.min.css.php'>
@@ -21,7 +22,7 @@
 	<link rel='stylesheet' type='text/css' href='{$project_path}/resources/fontawesome/css/all.min.css.php'>
 	<link rel='stylesheet' type='text/css' href='{$project_path}/themes/default/css.php'>
 {*//link to custom css file *}
-	{if $settings.theme.custom_css}
+	{if !empty($settings.theme.custom_css)}
 		<link rel='stylesheet' type='text/css' href='{$settings.theme.custom_css}'>
 	{/if}
 
@@ -43,7 +44,7 @@
 	<script language='JavaScript' type='text/javascript' src='{$project_path}/resources/fontawesome/js/solid.min.js.php' defer></script>
 
 {*//web font loader *}
-	{if $settings.theme.font_loader == 'true'}
+	{if isset($settings.theme.font_loader) && $settings.theme.font_loader == 'true'}
 		{if $settings.theme.font_retrieval != 'asynchronous'}
 			<script language='JavaScript' type='text/javascript' src='//ajax.googleapis.com/ajax/libs/webfont/{$settings.theme.font_loader_version}/webfont.js'></script>
 		{/if}
@@ -365,7 +366,7 @@
 			{/if}
 
 		//common (used by delete and toggle)
-			{if $settings.theme.keyboard_shortcut_delete_enabled || $settings.theme.keyboard_shortcut_toggle_enabled}
+			{if !empty($settings.theme.keyboard_shortcut_delete_enabled) || !empty($settings.theme.keyboard_shortcut_toggle_enabled)}
 				var list_checkboxes;
 				list_checkboxes = document.querySelectorAll('table.list tr.list-row td.checkbox input[type=checkbox]');
 			{/if}
@@ -426,7 +427,7 @@
 					{/if}
 
 				//key: [delete], list: to delete checked, edit: to delete
-					{if $settings.theme.keyboard_shortcut_delete_enabled}
+					{if !empty($settings.theme.keyboard_shortcut_delete_enabled)}
 						{literal}
 						if (e.which == 46 && !(e.target.tagName == 'INPUT' && e.target.type == 'text') && e.target.tagName != 'TEXTAREA') {
 							e.preventDefault();
@@ -551,6 +552,24 @@
 						{/literal}
 					{/if}
 
+				//key: [left] / [right], audio playback: rewind / fast-forward
+					{literal}
+					if (
+						e.which == 39 &&
+						!(e.target.tagName == 'INPUT' && e.target.type == 'text') &&
+						e.target.tagName != 'TEXTAREA'
+						) {
+						recording_fast_forward();
+					}
+					if (
+						e.which == 37 &&
+						!(e.target.tagName == 'INPUT' && e.target.type == 'text') &&
+						e.target.tagName != 'TEXTAREA'
+						) {
+						recording_rewind();
+					}
+					{/literal}
+
 		//keydown end
 			{literal}
 			});
@@ -647,7 +666,7 @@
 			{/literal}
 
 		//crossfade menu brand images (if hover version set)
-			{if $settings.theme.menu_brand_image != '' && $settings.theme.menu_brand_image_hover != '' && $settings.theme.menu_style != 'side'}
+			{if !empty($settings.theme.menu_brand_image) && !empty($settings.theme.menu_brand_image_hover) && isset($settings.theme.menu_style) && $settings.theme.menu_style != 'side'}
 				{literal}
 				$(function(){
 					$('#menu_brand_image').on('mouseover',function(){
@@ -725,24 +744,43 @@
 
 	//audio playback functions
 		{literal}
-		var recording_audio, audio_clock;
+		var recording_audio, audio_clock, recording_id_playing;
 
-		function recording_play(recording_id) {
-			if (document.getElementById('recording_progress_bar_'+recording_id)) {
-				document.getElementById('recording_progress_bar_'+recording_id).style.display='';
+		function recording_play(player_id, data, audio_type) {
+			if (document.getElementById('recording_progress_bar_' + player_id)) {
+				document.getElementById('recording_progress_bar_' + player_id).style.display='';
 			}
-			recording_audio = document.getElementById('recording_audio_'+recording_id);
+			recording_audio = document.getElementById('recording_audio_' + player_id);
 
 			if (recording_audio.paused) {
+				{/literal}
+				//create and load waveform image
+				{if $settings.theme.audio_player_waveform_enabled == 'true'}
+					{literal}
+					//list playback
+					if (document.getElementById('playback_progress_bar_background_' + player_id)) {
+						// alert("waveform.php?id=" + player_id + (data !== undefined ? '&data=' + data : '') + (audio_type !== undefined ? '&type=' + audio_type : ''));
+						document.getElementById('playback_progress_bar_background_' + player_id).style.backgroundImage = "linear-gradient(to bottom, rgba(0,0,0,0.10) 0%, transparent 20%), url('waveform.php?id=" + player_id + (data !== undefined ? '&data=' + data : '') + (audio_type !== undefined ? '&type=' + audio_type : '') + "')";
+					}
+					//form playback
+					else if (document.getElementById('recording_progress_bar_' + player_id)) {
+						// alert("waveform.php?id=" + player_id + (data !== undefined ? '&data=' + data : '') + (audio_type !== undefined ? '&type=' + audio_type : ''));
+						document.getElementById('recording_progress_bar_' + player_id).style.backgroundImage = "linear-gradient(to bottom, rgba(0,0,0,0.10) 0%, transparent 20%), url('waveform.php?id=" + player_id + (data !== undefined ? '&data=' + data : '') + (audio_type !== undefined ? '&type=' + audio_type : '') + "')";
+					}
+					{/literal}
+				{/if}
+				{literal}
 				recording_audio.volume = 1;
 				recording_audio.play();
-				document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='{/literal}{$settings.theme.button_icon_pause}{literal} fa-fw'></span>";
-				audio_clock = setInterval(function () { update_progress(recording_id); }, 20);
+				recording_id_playing = player_id;
+				document.getElementById('recording_button_' + player_id).innerHTML = "<span class='{/literal}{$settings.theme.button_icon_pause}{literal} fa-fw'></span>";
+				audio_clock = setInterval(function () { update_progress(player_id); }, 20);
 
-				$('[id*=recording_button]').not('[id*=recording_button_'+recording_id+']').html("<span class='{/literal}{$settings.theme.button_icon_play}{literal} fa-fw'></span>");
-				$('[id*=recording_progress_bar]').not('[id*=recording_progress_bar_'+recording_id+']').css('display', 'none');
+				$('[id*=recording_button]').not('[id*=recording_button_' + player_id + ']').html("<span class='{/literal}{$settings.theme.button_icon_play}{literal} fa-fw'></span>");
+				$('[id*=recording_button_intro]').not('[id*=recording_button_' + player_id + ']').html("<span class='{/literal}{$settings.theme.button_icon_comment}{literal} fa-fw'></span>");
+				$('[id*=recording_progress_bar]').not('[id*=recording_progress_bar_' + player_id + ']').css('display', 'none');
 
-				$('audio').each(function(){$('#menu_side_container').width()
+				$('audio').each(function(){
 					if ($(this).get(0) != recording_audio) {
 						$(this).get(0).pause(); //stop playing
 						$(this).get(0).currentTime = 0; //reset time
@@ -751,39 +789,67 @@
 			}
 			else {
 				recording_audio.pause();
-				document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='{/literal}{$settings.theme.button_icon_play}{literal} fa-fw'></span>";
+				recording_id_playing = '';
+				if (player_id.substring(0,6) == 'intro_') {
+					document.getElementById('recording_button_' + player_id).innerHTML = "<span class='{/literal}{$settings.theme.button_icon_comment}{literal} fa-fw'></span>";
+				}
+				else {
+					document.getElementById('recording_button_' + player_id).innerHTML = "<span class='{/literal}{$settings.theme.button_icon_play}{literal} fa-fw'></span>";
+				}
 				clearInterval(audio_clock);
 			}
 		}
 
-		function recording_stop(recording_id) {
-			recording_reset(recording_id);
+		function recording_stop(player_id) {
+			recording_reset(player_id);
 			clearInterval(audio_clock);
 		}
 
-		function recording_reset(recording_id) {
-			recording_audio = document.getElementById('recording_audio_'+recording_id);
+		function recording_reset(player_id) {
+			recording_audio = document.getElementById('recording_audio_' + player_id);
 			recording_audio.pause();
 			recording_audio.currentTime = 0;
-			if (document.getElementById('recording_progress_bar_'+recording_id)) {
-				document.getElementById('recording_progress_bar_'+recording_id).style.display='none';
+			if (document.getElementById('recording_progress_bar_' + player_id)) {
+				document.getElementById('recording_progress_bar_' + player_id).style.display='none';
 			}
-			document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='{/literal}{$settings.theme.button_icon_play}{literal} fa-fw'></span>";
+			if (player_id.substring(0,6) == 'intro_') {
+				document.getElementById('recording_button_' + player_id).innerHTML = "<span class='{/literal}{$settings.theme.button_icon_comment}{literal} fa-fw'></span>";
+			}
+			else {
+				document.getElementById('recording_button_' + player_id).innerHTML = "<span class='{/literal}{$settings.theme.button_icon_play}{literal} fa-fw'></span>";
+			}
 			clearInterval(audio_clock);
 		}
 
-		function update_progress(recording_id) {
-			recording_audio = document.getElementById('recording_audio_'+recording_id);
-			var recording_progress = document.getElementById('recording_progress_'+recording_id);
+		function update_progress(player_id) {
+			recording_audio = document.getElementById('recording_audio_' + player_id);
+			var recording_progress = document.getElementById('recording_progress_' + player_id);
 			var value = 0;
-			if (recording_audio.currentTime > 0) {
-				value = (100 / recording_audio.duration) * recording_audio.currentTime;
+			if (recording_audio != null && recording_audio.currentTime > 0) {
+				value = Number(((100 / recording_audio.duration) * recording_audio.currentTime).toFixed(1));
 			}
-			recording_progress.style.marginLeft = value + '%';
-			if (parseInt(recording_audio.duration) > 30) { //seconds
+			if (recording_progress) {
+				recording_progress.style.marginLeft = value + '%';
+			}
+			if (recording_audio != null && parseInt(recording_audio.duration) > 30) { //seconds
 				clearInterval(audio_clock);
 			}
 		}
+
+		function recording_fast_forward() {
+			if (recording_audio) {
+				recording_audio.currentTime += {/literal}{if !empty($settings.theme.audio_player_scrub_seconds) }{$settings.theme.audio_player_scrub_seconds}{else}2{/if}{literal};
+				update_progress(recording_id_playing);
+			}
+		}
+
+		function recording_rewind() {
+			if (recording_audio) {
+				recording_audio.currentTime -= {/literal}{if !empty($settings.theme.audio_player_scrub_seconds) }{$settings.theme.audio_player_scrub_seconds}{else}2{/if}{literal};
+				update_progress(recording_id_playing);
+			}
+		}
+
 		{/literal}
 
 	//handle action bar style on scroll
@@ -849,27 +915,24 @@
 			btn_copy = document.getElementById("btn_copy");
 			btn_toggle = document.getElementById("btn_toggle");
 			btn_delete = document.getElementById("btn_delete");
+			btn_download = document.getElementById("btn_download");
+			btn_transcribe = document.getElementById("btn_transcribe");
+			btn_resend = document.getElementById("btn_resend");
 			if (checked == true) {
-				if (btn_copy) {
-					btn_copy.style.display = "inline";
-				}
-				if (btn_toggle) {
-					btn_toggle.style.display = "inline";
-				}
-				if (btn_delete) {
-					btn_delete.style.display = "inline";
-				}
+				if (btn_copy) { btn_copy.style.display = "inline"; }
+				if (btn_toggle) { btn_toggle.style.display = "inline"; }
+				if (btn_delete) { btn_delete.style.display = "inline"; }
+				if (btn_download) { btn_download.style.display = "inline"; }
+				if (btn_transcribe) { btn_transcribe.style.display = "inline"; }
+				if (btn_resend) { btn_resend.style.display = "inline"; }
 			}
 		 	else {
-				if (btn_copy) {
-					btn_copy.style.display = "none";
-				}
-				if (btn_toggle) {
-					btn_toggle.style.display = "none";
-				}
-				if (btn_delete) {
-					btn_delete.style.display = "none";
-				}
+				if (btn_copy) { btn_copy.style.display = "none"; }
+				if (btn_toggle) { btn_toggle.style.display = "none"; }
+				if (btn_delete) { btn_delete.style.display = "none"; }
+				if (btn_download) { btn_download.style.display = "none"; }
+				if (btn_transcribe) { btn_transcribe.style.display = "none"; }
+				if (btn_resend) { btn_resend.style.display = "none"; }
 		 	}
 		}
 		{/literal}
@@ -907,7 +970,7 @@
 		function list_self_check(checkbox_id) {
 			var inputs = document.getElementsByTagName('input');
 			for (var i = 0, max = inputs.length; i < max; i++) {
-				if (inputs[i].type === 'checkbox') {
+				if (inputs[i].type === 'checkbox' && inputs[i].name.search['enabled'] == -1) {
 					inputs[i].checked = false;
 				}
 			}
@@ -1015,7 +1078,9 @@
 		{/literal}
 
 	{*//session timer *}
-		{$session_timer}
+		{if !empty($session_timer)}
+			{$session_timer}
+		{/if}
 
 	{*//domain selector *}
 	function search_domains(element_id) {
@@ -1038,7 +1103,7 @@
 
 				//add new options from the json results
 				for (var i=0; i < obj.length; i++) {
-					
+
 					//get the variables
 					domain_uuid = obj[i].domain_uuid;
 					domain_name = obj[i].domain_name;
@@ -1063,7 +1128,7 @@
 						div.style.background = '{$domain_selector_background_color_2}';
 					}
 
-					//set the active domain style 
+					//set the active domain style
 					if ('{$domain_uuid}' == obj[i].domain_uuid) {
 						div.style.background = '{$domain_active_background_color}';
 						div.style.fontWeight = 'bold';
@@ -1110,6 +1175,13 @@
 </head>
 <body>
 
+	{*//video background *}
+	{if !empty($settings.theme.background_video)}
+		<video id="background-video" autoplay muted poster="" disablePictureInPicture="true" onloadstart="this.playbackRate = 1; this.pause();">
+			<source src="{$settings.theme.background_video}" type="video/mp4">
+		</video>
+	{/if}
+
 	{*//message container *}
 		<div id='message_container'></div>
 
@@ -1139,7 +1211,7 @@
 		</div>
 
 	{*//login page *}
-		{if $login_page}
+		{if !empty($login_page)}
 			<div id='default_login'>
 				<a href='{$project_path}/'><img id='login_logo' style='width: {$login_logo_width}; height: {$login_logo_height};' src='{$login_logo_source}'></a><br />
 				{$document_body}

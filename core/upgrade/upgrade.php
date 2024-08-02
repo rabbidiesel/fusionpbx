@@ -17,24 +17,20 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2023
+	Portions created by the Initial Developer are Copyright (C) 2008-2024
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
 
-//add the document root to the include path
-	$config_glob = glob("{/usr/local/etc,/etc}/fusionpbx/config.conf", GLOB_BRACE);
-	if (is_array($config_glob) && count($config_glob) > 0) {
-		$config_glob = glob("{/usr/local/etc,/etc}/fusionpbx/config.conf", GLOB_BRACE);
-		$conf = parse_ini_file($config_glob[0]);
-		set_include_path($conf['document.root']);
-	}
-	else {
+//include file
+	require dirname(__DIR__, 2) . "/resources/require.php";
+
+//if the config file doesn't exist and the config.php does exist use it to write a new config file
+	if (isset($config_exists) && !$config_exists && file_exists("/etc/fusionpbx/config.php")) {
 		//include the config.php
-		$config_php_glob = glob("{/usr/local/etc,/etc}/fusionpbx/config.php", GLOB_BRACE);
-		include($config_php_glob[0]);
+		include("/etc/fusionpbx/config.php");
 
 		//set the default config file location
 		if (stristr(PHP_OS, 'BSD')) {
@@ -49,6 +45,8 @@
 			$storage_dir = '/var/lib/freeswitch/storage';
 			$voicemail_dir = '/var/lib/freeswitch/storage/voicemail';
 			$scripts_dir = '/usr/share/freeswitch/scripts';
+			$php_dir = PHP_BINDIR;
+			$cache_location = '/var/cache/fusionpbx';
 		}
 		if (stristr(PHP_OS, 'Linux')) {
 			$config_path = '/etc/fusionpbx/';
@@ -62,6 +60,24 @@
 			$storage_dir = '/var/lib/freeswitch/storage';
 			$voicemail_dir = '/var/lib/freeswitch/storage/voicemail';
 			$scripts_dir = '/usr/share/freeswitch/scripts';
+			$php_dir = PHP_BINDIR;
+			$cache_location = '/var/cache/fusionpbx';
+		}
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+			$system_drive = getenv('SystemDrive');
+			$config_path = $system_drive . DIRECTORY_SEPARATOR . 'ProgramData' . DIRECTORY_SEPARATOR . 'fusionpbx' ;
+			$config_file = $config_path.DIRECTORY_SEPARATOR.'config.conf';
+			$document_root = $_SERVER["DOCUMENT_ROOT"];
+
+			$conf_dir = $_SERVER['ProgramFiles'].DIRECTORY_SEPARATOR.'freeswitch'.DIRECTORY_SEPARATOR.'conf';
+			$sounds_dir = $_SERVER['ProgramFiles'].DIRECTORY_SEPARATOR.'freeswitch'.DIRECTORY_SEPARATOR.'sounds';
+			$database_dir = $_SERVER['ProgramFiles'].DIRECTORY_SEPARATOR.'freeswitch'.DIRECTORY_SEPARATOR.'db';
+			$recordings_dir = $_SERVER['ProgramFiles'].DIRECTORY_SEPARATOR.'freeswitch'.DIRECTORY_SEPARATOR.'recordings';
+			$storage_dir = $_SERVER['ProgramFiles'].DIRECTORY_SEPARATOR.'freeswitch'.DIRECTORY_SEPARATOR.'storage';
+			$voicemail_dir = $_SERVER['ProgramFiles'].DIRECTORY_SEPARATOR.'freeswitch'.DIRECTORY_SEPARATOR.'voicemail';
+			$scripts_dir = $_SERVER['ProgramFiles'].DIRECTORY_SEPARATOR.'freeswitch'.DIRECTORY_SEPARATOR.'scripts';
+			$php_dir = dirname(PHP_BINARY);
+			$cache_location = dirname($_SERVER['DOCUMENT_ROOT']).DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.'fusionpbx';
 		}
 
 		//make the config directory
@@ -93,12 +109,12 @@
 		$conf .= "document.root = ".$document_root."\n";
 		$conf .= "project.path =\n";
 		$conf .= "temp.dir = /tmp\n";
-		$conf .= "php.dir = ".PHP_BINDIR."\n";
+		$conf .= "php.dir = ".$php_dir."\n";
 		$conf .= "php.bin = php\n";
 		$conf .= "\n";
 		$conf .= "#cache settings\n";
 		$conf .= "cache.method = file\n";
-		$conf .= "cache.location = /var/cache/fusionpbx\n";
+		$conf .= "cache.location = ".$cache_location."\n";
 		$conf .= "cache.settings = true\n";
 		$conf .= "\n";
 		$conf .= "#switch settings\n";
@@ -123,15 +139,10 @@
 		if(!$file_handle){ return; }
 		fwrite($file_handle, $conf);
 		fclose($file_handle);
-
-		//set the include path
-		$config_glob = glob("{/usr/local/etc,/etc}/fusionpbx/config.conf", GLOB_BRACE);
-		$conf = parse_ini_file($config_glob[0]);
-		set_include_path($conf['document.root']);
 	}
 
 //include files
-	require_once "resources/require.php";
+	require dirname(__DIR__, 2) . "/resources/require.php";
 
 //check the permission
 	if(defined('STDIN')) {
@@ -160,8 +171,11 @@
 		}
 	}
 
-//show the upgrade type
-	//echo $upgrade_type."\n";
+//check for the upgrade menu option first
+	if ($upgrade_type == 'menu') {
+		require __DIR__ . '/upgrade_menu.php';
+		exit();
+	}
 
 //get the version of the software
 	if ($upgrade_type == 'version') {
@@ -185,11 +199,11 @@
 		if (isset($argv[2]) && $argv[2] == 'data_types') {
 			$obj->data_types = true;
 		}
-		echo $obj->schema($format);
+		echo $obj->schema($format ?? '');
 	}
 
 //restore the default menu
-	if ($upgrade_type == 'menu') {
+	if ($upgrade_type == 'menus') {
 
 		//get the menu uuid and language
 		$sql = "select menu_uuid, menu_language from v_menus ";
@@ -209,11 +223,15 @@
 		}
 
 		//set the menu back to default
-		if (isset($argv[2]) && (is_null($argv[2]) || $argv[2] == 'default')) {
+		if (!isset($argv[2]) || $argv[2] == 'default') {
 			//restore the menu
 			$included = true;
 			require_once("core/menu/menu_restore_default.php");
 			unset($sel_menu);
+
+			//use upgrade language file
+			$language = new text;
+			$text = $language->get(null, 'core/upgrade');
 
 			//send message to the console
 			echo $text['message-upgrade_menu']."\n";
@@ -228,6 +246,10 @@
 		//default the permissions
 		$included = true;
 		require_once("core/groups/permissions_default.php");
+
+		//use upgrade language file
+		$language = new text;
+		$text = $language->get(null, 'core/upgrade');
 
 		//send message to the console
 		echo $text['message-upgrade_permissions']."\n";
@@ -254,7 +276,6 @@
 
 		//run all app_defaults.php files
 			$domain = new domains;
-			$domain->display_type = $display_type;
 			$domain->upgrade();
 
 		//show the content
@@ -286,6 +307,24 @@
 			if ($display_type == "html") {
 				require_once "resources/footer.php";
 			}
+	}
+
+//upgrade optional apps
+	if ($upgrade_type == 'repos') {
+
+		$app_list = git_find_repos($_SERVER["PROJECT_ROOT"]."/app");
+
+		if (!is_array($app_list)) {
+			exit;
+		}
+		print_r($app_list);exit;
+		foreach ($app_list as $repo => $apps) {
+			$path = $repo;
+			$git_result = git_pull($path);
+			foreach ($git_result['message'] as $response_line) {
+				echo $repo . ": " . $response_line . "\n";
+			}
+		}
 	}
 
 ?>

@@ -222,10 +222,15 @@
     <!-- # Enable TR-069. 0 - No, 1 - Yes (default is Yes) -->
     <!-- # Number: 0, 1 -->
     <!-- # Mandatory -->
-    <P1409>1</P1409>
+    {if isset ($grandstream_tr069_enable)}
+<P1409>{$grandstream_tr069_enable}</P1409>
+{else}
+<P1409>0</P1409>
+{/if}
+
 
     <!-- # ACS URL -->
-    <!-- #P4503= -->
+    {if isset($grandstream_acs_url)}<P4503>{$grandstream_acs_url}</P4503>{else}<P4503></P4503>{/if}
 
     <!-- # ACS Username -->
     <!-- # String -->
@@ -238,7 +243,12 @@
     <!-- # Periodic Inform Enable 0 - No, 1 - Yes (default is No) -->
     <!-- # Number: 0, 1 -->
     <!-- # Mandatory -->
-    <P4506>0</P4506>
+    {if isset ($grandstream_tr069_periodic_inform_enable)}
+<P4506>{$grandstream_tr069_periodic_inform_enable}</P4506>
+{else}
+<P4506>0</P4506>
+{/if}
+
 
     <!-- # Periodic Inform Interval (default is 300) -->
     <!-- # Number: 1-99999 -->
@@ -246,11 +256,11 @@
 
     <!-- # Connection Request Username -->
     <!-- # String -->
-    <P4511></P4511>
+    <P4511>{$mac|replace:'-':''|upper}</P4511>
 
     <!-- # Connection Request Password -->
     <!-- # String -->
-    <P4512></P4512>
+    <P4512>{$mac|replace:'-':''|upper}</P4512>
 
     <!-- # CPE SSL Certificate -->
     <P8220></P8220>
@@ -470,7 +480,11 @@
 
     <!-- # NTP Server -->
     <!-- # Server address -->
-    <P30>us.pool.ntp.org</P30>
+    {if isset($ntp_server_primary)}
+	<P30>{$ntp_server_primary}</P30>
+	{else}
+	<P30>pool.ntp.org</P30>
+	{/if}
 
     <!-- # Allow DHCP Option 42 to override NTP server. 0 - No, 1 - Yes. Default is No. -->
     <!-- # When set to Yes(1), it will override the configured NTP server. -->
@@ -836,17 +850,30 @@
     <!-- # Priority 1 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_1) }
+    <P850>{$grandstream_dtmf_method_1}</P850>
+    {else}
     <P850>101</P850>
+    {/if}
+
 
     <!-- # Priority 2 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_2) }
+    <P851>{$grandstream_dtmf_method_1}</P851>
+    {else}
     <P851>102</P851>
+    {/if}
 
     <!-- # Priority 3 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_3) }
+    <P852>{$grandstream_dtmf_method_1}</P852>
+    {else}
     <P852>100</P852>
+    {/if}
 
     <!-- # Inband DTMF Duration. duration and inter-duration -->
     <!-- # Number: 40 - 200 milliseconds -->
@@ -1748,17 +1775,30 @@
     <!-- # Priority 1 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_1) }
+    <P860>{$grandstream_dtmf_method_1}</P860>
+    {else}
     <P860>101</P860>
+    {/if}
+
 
     <!-- # Priority 2 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_2) }
+    <P861>{$grandstream_dtmf_method_1}</P861>
+    {else}
     <P861>102</P861>
+    {/if}
 
     <!-- # Priority 3 -->
     <!-- # Number: 100, 101, 102 -->
     <!-- # Mandatory -->
+    {if isset($grandstream_dtmf_method_3) }
+    <P862>{$grandstream_dtmf_method_1}</P862>
+    {else}
     <P862>100</P862>
+    {/if}
 
     <!-- # Inband DTMF Duration. duration and inter-duration -->
     <!-- # Number: 40 - 200 milliseconds -->

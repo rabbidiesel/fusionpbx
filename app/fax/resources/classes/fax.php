@@ -40,7 +40,8 @@ if (!class_exists('fax')) {
 		public $fax_forward_number;
 		public $destination_number;
 		public $box;
-		private $forward_prefix;
+		public $order_by;
+		public $order;
 
 		/**
 		* declare private variables
@@ -53,6 +54,7 @@ if (!class_exists('fax')) {
 		private $uuid_prefix;
 		private $toggle_field;
 		private $toggle_values;
+		private $forward_prefix;
 
 		/**
 		* Called when the object is created
@@ -87,7 +89,7 @@ if (!class_exists('fax')) {
 				}
 
 			//set the dialplan_uuid
-				if (strlen($this->dialplan_uuid) == 0) {
+				if (empty($this->dialplan_uuid)) {
 					$this->dialplan_uuid = uuid();
 				}
 				else {
@@ -114,7 +116,7 @@ if (!class_exists('fax')) {
 				$fax_name = ($this->fax_name != '') ? $this->fax_name : format_phone($this->destination_number);
 
 			//set the  last fax
-				if (strlen($_SESSION['fax']['last_fax']['text']) > 0) {
+				if (!empty($_SESSION['fax']['last_fax']['text'])) {
 					$last_fax = "last_fax=".xml::sanitize($_SESSION['fax']['last_fax']['text']);
 				}
 				else {
@@ -187,7 +189,7 @@ if (!class_exists('fax')) {
 				$cache->delete("dialplan:".$_SESSION['domain_name']);
 
 			//return the dialplan_uuid
-				return $dialplan_response;
+				return $dialplan_response ?? null;
 
 		}
 
@@ -221,7 +223,7 @@ if (!class_exists('fax')) {
 
 						//filter out unchecked fax extensions, build where clause for below
 							foreach ($records as $x => $record) {
-								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$uuids[] = "'".$record['uuid']."'";
 								}
 							}
@@ -262,7 +264,7 @@ if (!class_exists('fax')) {
 							}
 
 						//delete fax file(s)
-							if (is_array($fax_files) && @sizeof($fax_files) != 0) {
+							if (!empty($fax_files) && is_array($fax_files) && @sizeof($fax_files) != 0) {
 								foreach ($fax_files as $fax_file_uuid => $fax_file) {
 									if (substr_count($fax_file['path'], '/temp/') > 0) {
 										$fax_file['path'] = str_replace('/temp/', '/'.$fax_file['type'].'/', $fax_file['path']);
@@ -287,24 +289,26 @@ if (!class_exists('fax')) {
 
 						//build the delete array
 							$x = 0;
-							foreach ($faxes as $fax_uuid => $fax) {
-								$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $fax_uuid;
-								$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
-								$array['fax_users'][$x][$this->uuid_prefix.'uuid'] = $fax_uuid;
-								$array['fax_users'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
-								$array['fax_files'][$x][$this->uuid_prefix.'uuid'] = $fax_uuid;
-								$array['fax_files'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
-								$array['fax_logs'][$x][$this->uuid_prefix.'uuid'] = $fax_uuid;
-								$array['fax_logs'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
-								$array['dialplans'][$x]['dialplan_uuid'] = $fax['dialplan_uuid'];
-								$array['dialplans'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
-								$array['dialplan_details'][$x]['dialplan_uuid'] = $fax['dialplan_uuid'];
-								$array['dialplan_details'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
-								$x++;
+							if (!empty($faxes) && is_array($faxes) && @sizeof($faxes) != 0) {
+								foreach ($faxes as $fax_uuid => $fax) {
+									$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $fax_uuid;
+									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$array['fax_users'][$x][$this->uuid_prefix.'uuid'] = $fax_uuid;
+									$array['fax_users'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$array['fax_files'][$x][$this->uuid_prefix.'uuid'] = $fax_uuid;
+									$array['fax_files'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$array['fax_logs'][$x][$this->uuid_prefix.'uuid'] = $fax_uuid;
+									$array['fax_logs'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$array['dialplans'][$x]['dialplan_uuid'] = $fax['dialplan_uuid'];
+									$array['dialplans'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$array['dialplan_details'][$x]['dialplan_uuid'] = $fax['dialplan_uuid'];
+									$array['dialplan_details'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$x++;
+								}
 							}
 
 						//delete the checked rows
-							if (is_array($array) && @sizeof($array) != 0) {
+							if (!empty($array) && is_array($array) && @sizeof($array) != 0) {
 
 								//grant temporary permissions
 									$p = new permissions;
@@ -377,7 +381,7 @@ if (!class_exists('fax')) {
 
 						//filter out unchecked fax files, build where clause for below
 							foreach ($records as $x => $record) {
-								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$uuids[] = "'".$record['uuid']."'";
 								}
 							}
@@ -478,7 +482,7 @@ if (!class_exists('fax')) {
 
 						//filter out unchecked fax logs, build the delete array
 							foreach ($records as $x => $record) {
-								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $record['uuid'];
 									$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
 								}
@@ -532,7 +536,7 @@ if (!class_exists('fax')) {
 
 						//get checked records
 							foreach($records as $x => $record) {
-								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
 									$uuids[] = "'".$record['uuid']."'";
 								}
 							}
@@ -651,6 +655,71 @@ if (!class_exists('fax')) {
 
 			}
 		} //method
+
+		/**
+		 * toggle read/unread
+		 */
+		public function fax_file_toggle($records) {
+
+			if (permission_exists('fax_file_edit')) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate($_SERVER['PHP_SELF'])) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: fax_files.php?order_by='.urlencode($this->order_by).'&order='.urlencode($this->order).'&id='.urlencode($this->fax_uuid).'&box='.urlencode($this->box));
+						exit;
+					}
+
+				//toggle multiple records
+					if (is_array($records) && @sizeof($records) != 0) {
+
+						//filter out unchecked fax files, build the toggle array
+							$fax_files_toggled = 0;
+							foreach ($records as $x => $record) {
+								if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
+									//get current read state
+									$sql = "select read_date from v_fax_files where fax_file_uuid = :fax_file_uuid";
+									$parameters['fax_file_uuid'] = $record['uuid'];
+									$database = new database;
+									$read_date = $database->select($sql, $parameters, 'column');
+									unset($sql, $parameters);
+
+									//toggle read state
+									$array['fax_files'][$x]['fax_file_uuid'] = $record['uuid'];
+									$array['fax_files'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+									$array['fax_files'][$x]['read_date'] = empty($read_date) ? 'now()' : null;
+									$fax_files_toggled++;
+								}
+							}
+							unset($records);
+
+						//update the checked rows
+							if (!empty($array) && is_array($array)) {
+
+								//execute save
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->save($array);
+									unset($array);
+
+								//return toggled count
+									return $fax_files_toggled;
+
+							}
+
+					}
+
+				//return none
+					return 0;
+			}
+
+		}
 
 	} //class
 }
