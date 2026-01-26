@@ -273,8 +273,13 @@
 				//set message
 				message::add($text['message-update']);
 
-				//redirect
-				header("Location: recordings.php");
+				//redirect - stay on edit page if create_recording was true, otherwise go back to list
+				if (!empty($_POST["create_recording"]) && $_POST["create_recording"] == 'true') {
+					header("Location: recording_edit.php?id=".$recording_uuid);
+				}
+				else {
+					header("Location: recordings.php");
+				}
 				exit;
 			}
 		}
@@ -354,6 +359,94 @@
 		echo $text['description-file_name']."\n";
 		echo "</td>\n";
 		echo "</tr>\n";
+
+		// Add waveform player if recording file exists
+		$recording_path = $settings->get('switch', 'recordings').'/'.$domain_name;
+		if (!empty($recording_filename) && file_exists($recording_path.'/'.$recording_filename)) {
+			echo "<tr>\n";
+			echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+			echo "    Preview\n";
+			echo "</td>\n";
+			echo "<td class='vtable' align='left'>\n";
+			echo "    <div style='margin-bottom: 10px;'>\n";
+			echo "        <button type='button' id='playPauseBtn' style='padding: 8px 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 14px;'>\n";
+			echo "            <span id='playIcon'>▶</span> <span id='btnText'>Play</span>\n";
+			echo "        </button>\n";
+			echo "        <span id='currentTime' style='margin-left: 10px; font-family: monospace;'>0:00</span>\n";
+			echo "        <span style='margin: 0 5px;'>/</span>\n";
+			echo "        <span id='duration' style='font-family: monospace;'>0:00</span>\n";
+			echo "    </div>\n";
+			echo "    <div id='waveform' style='width: 100%; max-width: 800px;'></div>\n";
+			echo "    <script src='https://unpkg.com/wavesurfer.js@7'></script>\n";
+			echo "    <script>\n";
+			echo "    document.addEventListener('DOMContentLoaded', function() {\n";
+			echo "        const wavesurfer = WaveSurfer.create({\n";
+			echo "            container: '#waveform',\n";
+			echo "            waveColor: '#4a90e2',\n";
+			echo "            progressColor: '#1e3a8a',\n";
+			echo "            cursorColor: '#ff6b6b',\n";
+			echo "            barWidth: 2,\n";
+			echo "            barGap: 1,\n";
+			echo "            height: 80,\n";
+			echo "            normalize: true,\n";
+			echo "            backend: 'WebAudio'\n";
+			echo "        });\n";
+			echo "\n";
+			echo "        const recordingUrl = '/app/recordings/recordings.php?a=download&type=rec&filename=".urlencode($recording_filename)."&id=".urlencode($recording_uuid)."';\n";
+			echo "        wavesurfer.load(recordingUrl);\n";
+			echo "\n";
+			echo "        const playPauseBtn = document.getElementById('playPauseBtn');\n";
+			echo "        const playIcon = document.getElementById('playIcon');\n";
+			echo "        const btnText = document.getElementById('btnText');\n";
+			echo "        const currentTimeDisplay = document.getElementById('currentTime');\n";
+			echo "        const durationDisplay = document.getElementById('duration');\n";
+			echo "\n";
+			echo "        function formatTime(seconds) {\n";
+			echo "            const minutes = Math.floor(seconds / 60);\n";
+			echo "            const secs = Math.floor(seconds % 60);\n";
+			echo "            return minutes + ':' + (secs < 10 ? '0' : '') + secs;\n";
+			echo "        }\n";
+			echo "\n";
+			echo "        playPauseBtn.addEventListener('click', function() {\n";
+			echo "            wavesurfer.playPause();\n";
+			echo "        });\n";
+			echo "\n";
+			echo "        wavesurfer.on('play', function() {\n";
+			echo "            playIcon.textContent = '⏸';\n";
+			echo "            btnText.textContent = 'Pause';\n";
+			echo "            playPauseBtn.style.backgroundColor = '#ff9800';\n";
+			echo "        });\n";
+			echo "\n";
+			echo "        wavesurfer.on('pause', function() {\n";
+			echo "            playIcon.textContent = '▶';\n";
+			echo "            btnText.textContent = 'Play';\n";
+			echo "            playPauseBtn.style.backgroundColor = '#4CAF50';\n";
+			echo "        });\n";
+			echo "\n";
+			echo "        wavesurfer.on('ready', function() {\n";
+			echo "            durationDisplay.textContent = formatTime(wavesurfer.getDuration());\n";
+			echo "        });\n";
+			echo "\n";
+			echo "        wavesurfer.on('audioprocess', function() {\n";
+			echo "            currentTimeDisplay.textContent = formatTime(wavesurfer.getCurrentTime());\n";
+			echo "        });\n";
+			echo "\n";
+			echo "        wavesurfer.on('seek', function() {\n";
+			echo "            currentTimeDisplay.textContent = formatTime(wavesurfer.getCurrentTime());\n";
+			echo "        });\n";
+			echo "\n";
+			echo "        wavesurfer.on('finish', function() {\n";
+			echo "            playIcon.textContent = '▶';\n";
+			echo "            btnText.textContent = 'Play';\n";
+			echo "            playPauseBtn.style.backgroundColor = '#4CAF50';\n";
+			echo "        });\n";
+			echo "    });\n";
+			echo "    </script>\n";
+			echo "<br />\n";
+			echo "Listen to the current recording\n";
+			echo "</td>\n";
+			echo "</tr>\n";
+		}
 	}
 
 	if ($speech_enabled || $transcribe_enabled) {
