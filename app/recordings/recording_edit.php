@@ -360,90 +360,40 @@
 		echo "</td>\n";
 		echo "</tr>\n";
 
-		// Add waveform player if recording file exists
+		// Add FusionPBX native audio player if recording file exists
 		$recording_path = $settings->get('switch', 'recordings').'/'.$domain_name;
 		if (!empty($recording_filename) && file_exists($recording_path.'/'.$recording_filename)) {
+			// Determine audio type
+			$recording_file_ext = strtolower(pathinfo($recording_filename, PATHINFO_EXTENSION));
+			switch ($recording_file_ext) {
+				case "wav": $recording_type = "audio/wav"; break;
+				case "mp3": $recording_type = "audio/mpeg"; break;
+				case "ogg": $recording_type = "audio/ogg"; break;
+				default: $recording_type = "audio/wav";
+			}
+			
 			echo "<tr>\n";
 			echo "<td class='vncell' valign='top' align='left' nowrap>\n";
 			echo "    Preview\n";
 			echo "</td>\n";
 			echo "<td class='vtable' align='left'>\n";
+			
+			// Progress bar (waveform visualization)
 			echo "    <div style='margin-bottom: 10px;'>\n";
-			echo "        <button type='button' id='playPauseBtn' style='padding: 8px 16px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 14px;'>\n";
-			echo "            <span id='playIcon'>▶</span> <span id='btnText'>Play</span>\n";
-			echo "        </button>\n";
-			echo "        <span id='currentTime' style='margin-left: 10px; font-family: monospace;'>0:00</span>\n";
-			echo "        <span style='margin: 0 5px;'>/</span>\n";
-			echo "        <span id='duration' style='font-family: monospace;'>0:00</span>\n";
+			echo "        <div id='playback_progress_bar_background_".escape($recording_uuid)."' class='playback_progress_bar_background' onclick=\"recording_seek(event,'".escape($recording_uuid)."')\" style='cursor: pointer; height: 20px; background-color: #e0e0e0; border-radius: 3px; position: relative; overflow: hidden;'>\n";
+			echo "            <span class='playback_progress_bar' id='recording_progress_".escape($recording_uuid)."' style='display: block; height: 100%; background-color: #4a90e2; width: 0%; transition: width 0.1s;'></span>\n";
+			echo "        </div>\n";
 			echo "    </div>\n";
-			echo "    <div id='waveform' style='width: 100%; max-width: 800px;'></div>\n";
-			echo "    <script src='https://unpkg.com/wavesurfer.js@7'></script>\n";
-			echo "    <script>\n";
-			echo "    document.addEventListener('DOMContentLoaded', function() {\n";
-			echo "        const wavesurfer = WaveSurfer.create({\n";
-			echo "            container: '#waveform',\n";
-			echo "            waveColor: '#4a90e2',\n";
-			echo "            progressColor: '#1e3a8a',\n";
-			echo "            cursorColor: '#ff6b6b',\n";
-			echo "            barWidth: 2,\n";
-			echo "            barGap: 1,\n";
-			echo "            height: 80,\n";
-			echo "            normalize: true,\n";
-			echo "            backend: 'WebAudio'\n";
-			echo "        });\n";
-			echo "\n";
-			echo "        const recordingUrl = '/app/recordings/recordings.php?a=download&type=rec&filename=".urlencode($recording_filename)."&id=".urlencode($recording_uuid)."';\n";
-			echo "        wavesurfer.load(recordingUrl);\n";
-			echo "\n";
-			echo "        const playPauseBtn = document.getElementById('playPauseBtn');\n";
-			echo "        const playIcon = document.getElementById('playIcon');\n";
-			echo "        const btnText = document.getElementById('btnText');\n";
-			echo "        const currentTimeDisplay = document.getElementById('currentTime');\n";
-			echo "        const durationDisplay = document.getElementById('duration');\n";
-			echo "\n";
-			echo "        function formatTime(seconds) {\n";
-			echo "            const minutes = Math.floor(seconds / 60);\n";
-			echo "            const secs = Math.floor(seconds % 60);\n";
-			echo "            return minutes + ':' + (secs < 10 ? '0' : '') + secs;\n";
-			echo "        }\n";
-			echo "\n";
-			echo "        playPauseBtn.addEventListener('click', function() {\n";
-			echo "            wavesurfer.playPause();\n";
-			echo "        });\n";
-			echo "\n";
-			echo "        wavesurfer.on('play', function() {\n";
-			echo "            playIcon.textContent = '⏸';\n";
-			echo "            btnText.textContent = 'Pause';\n";
-			echo "            playPauseBtn.style.backgroundColor = '#ff9800';\n";
-			echo "        });\n";
-			echo "\n";
-			echo "        wavesurfer.on('pause', function() {\n";
-			echo "            playIcon.textContent = '▶';\n";
-			echo "            btnText.textContent = 'Play';\n";
-			echo "            playPauseBtn.style.backgroundColor = '#4CAF50';\n";
-			echo "        });\n";
-			echo "\n";
-			echo "        wavesurfer.on('ready', function() {\n";
-			echo "            durationDisplay.textContent = formatTime(wavesurfer.getDuration());\n";
-			echo "        });\n";
-			echo "\n";
-			echo "        wavesurfer.on('audioprocess', function() {\n";
-			echo "            currentTimeDisplay.textContent = formatTime(wavesurfer.getCurrentTime());\n";
-			echo "        });\n";
-			echo "\n";
-			echo "        wavesurfer.on('seek', function() {\n";
-			echo "            currentTimeDisplay.textContent = formatTime(wavesurfer.getCurrentTime());\n";
-			echo "        });\n";
-			echo "\n";
-			echo "        wavesurfer.on('finish', function() {\n";
-			echo "            playIcon.textContent = '▶';\n";
-			echo "            btnText.textContent = 'Play';\n";
-			echo "            playPauseBtn.style.backgroundColor = '#4CAF50';\n";
-			echo "        });\n";
-			echo "    });\n";
-			echo "    </script>\n";
+			
+			// Hidden audio element
+			echo "    <audio id='recording_audio_".escape($recording_uuid)."' style='display: none;' preload='metadata' ontimeupdate=\"update_progress('".escape($recording_uuid)."')\" onended=\"recording_reset('".escape($recording_uuid)."');\" src=\"".PROJECT_PATH."/app/recordings/recordings.php?action=download&type=rec&id=".urlencode($recording_uuid)."\" type='".$recording_type."'></audio>\n";
+			
+			// Play button using FusionPBX theme
+			echo "    ";
+			echo button::create(['type'=>'button','label'=>$text['label-play'],'icon'=>$theme_button_icon_play,'id'=>'recording_button_'.escape($recording_uuid),'onclick'=>"recording_play('".escape($recording_uuid)."')"]);
+			
 			echo "<br />\n";
-			echo "Listen to the current recording\n";
+			echo "    Listen to the current recording\n";
 			echo "</td>\n";
 			echo "</tr>\n";
 		}
@@ -842,6 +792,72 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	echo "</form>";
+
+	// Add FusionPBX audio player JavaScript functions if recording exists
+	if (!empty($recording_uuid) && !empty($recording_filename)) {
+		$recording_path = $settings->get('switch', 'recordings').'/'.$domain_name;
+		if (file_exists($recording_path.'/'.$recording_filename)) {
+?>
+<script>
+function recording_play(recording_uuid) {
+	var recording_audio = document.getElementById('recording_audio_' + recording_uuid);
+	var button = document.getElementById('recording_button_' + recording_uuid);
+	
+	if (recording_audio.paused) {
+		recording_audio.play();
+		if (button) {
+			button.querySelector('i, span').className = button.querySelector('i, span').className.replace('fa-play', 'fa-pause');
+		}
+	} else {
+		recording_audio.pause();
+		if (button) {
+			button.querySelector('i, span').className = button.querySelector('i, span').className.replace('fa-pause', 'fa-play');
+		}
+	}
+}
+
+function update_progress(recording_uuid) {
+	var recording_audio = document.getElementById('recording_audio_' + recording_uuid);
+	var progress_bar = document.getElementById('recording_progress_' + recording_uuid);
+	
+	if (recording_audio && progress_bar) {
+		var percentage = (recording_audio.currentTime / recording_audio.duration) * 100;
+		progress_bar.style.width = percentage + '%';
+	}
+}
+
+function recording_reset(recording_uuid) {
+	var recording_audio = document.getElementById('recording_audio_' + recording_uuid);
+	var progress_bar = document.getElementById('recording_progress_' + recording_uuid);
+	var button = document.getElementById('recording_button_' + recording_uuid);
+	
+	if (recording_audio) {
+		recording_audio.pause();
+		recording_audio.currentTime = 0;
+	}
+	if (progress_bar) {
+		progress_bar.style.width = '0%';
+	}
+	if (button) {
+		button.querySelector('i, span').className = button.querySelector('i, span').className.replace('fa-pause', 'fa-play');
+	}
+}
+
+function recording_seek(event, recording_uuid) {
+	var recording_audio = document.getElementById('recording_audio_' + recording_uuid);
+	var progress_background = document.getElementById('playback_progress_bar_background_' + recording_uuid);
+	
+	if (recording_audio && progress_background) {
+		var rect = progress_background.getBoundingClientRect();
+		var x = event.clientX - rect.left;
+		var percentage = x / rect.width;
+		recording_audio.currentTime = recording_audio.duration * percentage;
+	}
+}
+</script>
+<?php
+		}
+	}
 
 //include the footer
 	require_once "resources/footer.php";
