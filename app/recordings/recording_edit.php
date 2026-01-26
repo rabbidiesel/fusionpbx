@@ -242,6 +242,15 @@
 						}
 						unset($recording_filename_temp);
 					}
+
+					//generate waveform PNG for the recording
+					if (file_exists($recording_path.'/'.$recording_filename)) {
+						$waveform_png = $recording_path.'/'.pathinfo($recording_filename, PATHINFO_FILENAME).'.png';
+						//use ffmpeg to generate waveform
+						$ffmpeg_cmd = 'ffmpeg -i '.escapeshellarg($recording_path.'/'.$recording_filename).' -filter_complex "showwavespic=s=1800x200:colors=#3ab768" -frames:v 1 -y '.escapeshellarg($waveform_png).' 2>&1';
+						exec($ffmpeg_cmd, $output, $return_var);
+						unset($ffmpeg_cmd, $output, $return_var);
+					}
 				}
 
 				//audio to text - get the transcription from the audio file
@@ -302,6 +311,18 @@
 			$recording_voice = $row["recording_voice"];
 			$recording_message = $row["recording_message"];
 			$recording_description = $row["recording_description"];
+
+			//generate waveform if it doesn't exist
+			$recording_path = $settings->get('switch', 'recordings').'/'.$domain_name;
+			if (!empty($recording_filename) && file_exists($recording_path.'/'.$recording_filename)) {
+				$waveform_png = $recording_path.'/'.pathinfo($recording_filename, PATHINFO_FILENAME).'.png';
+				if (!file_exists($waveform_png)) {
+					//use ffmpeg to generate waveform
+					$ffmpeg_cmd = 'ffmpeg -i '.escapeshellarg($recording_path.'/'.$recording_filename).' -filter_complex "showwavespic=s=1800x200:colors=#3ab768" -frames:v 1 -y '.escapeshellarg($waveform_png).' 2>&1';
+					exec($ffmpeg_cmd, $output, $return_var);
+					unset($ffmpeg_cmd, $output, $return_var);
+				}
+			}
 		}
 		unset($sql, $parameters, $row);
 	}
@@ -372,18 +393,32 @@
 				default: $recording_type = "audio/wav";
 			}
 			
+			// Check if waveform PNG exists
+			$waveform_png = pathinfo($recording_filename, PATHINFO_FILENAME).'.png';
+			$waveform_exists = file_exists($recording_path.'/'.$waveform_png);
+			
 			echo "<tr>\n";
 			echo "<td class='vncell' valign='top' align='left' nowrap>\n";
 			echo "    Preview\n";
 			echo "</td>\n";
 			echo "<td class='vtable' align='left'>\n";
 			
-			// Progress bar (waveform visualization)
-			echo "    <div style='margin-bottom: 10px;'>\n";
-			echo "        <div id='playback_progress_bar_background_".escape($recording_uuid)."' class='playback_progress_bar_background' onclick=\"recording_seek(event,'".escape($recording_uuid)."')\" style='cursor: pointer; height: 20px; background-color: #e0e0e0; border-radius: 3px; position: relative; overflow: hidden;'>\n";
-			echo "            <span class='playback_progress_bar' id='recording_progress_".escape($recording_uuid)."' style='display: block; height: 100%; background-color: #4a90e2; width: 0%; transition: width 0.1s;'></span>\n";
-			echo "        </div>\n";
-			echo "    </div>\n";
+			// Waveform with progress bar overlay
+			if ($waveform_exists) {
+				echo "    <div style='position: relative; margin-bottom: 10px;'>\n";
+				echo "        <img src='".PROJECT_PATH."/app/recordings/recordings.php?action=download&type=rec&filename=".urlencode($waveform_png)."&id=".urlencode($recording_uuid)."' style='width: 100%; max-width: 1800px; height: auto; display: block;' alt='Waveform'>\n";
+				echo "        <div id='playback_progress_bar_background_".escape($recording_uuid)."' onclick=\"recording_seek(event,'".escape($recording_uuid)."')\" style='position: absolute; top: 0; left: 0; right: 0; bottom: 0; cursor: pointer;'>\n";
+				echo "            <span class='playback_progress_bar' id='recording_progress_".escape($recording_uuid)."' style='display: block; position: absolute; top: 0; left: 0; bottom: 0; background-color: rgba(255, 0, 0, 0.3); width: 0%; transition: width 0.1s;'></span>\n";
+				echo "        </div>\n";
+				echo "    </div>\n";
+			} else {
+				// Fallback progress bar if no waveform
+				echo "    <div style='margin-bottom: 10px;'>\n";
+				echo "        <div id='playback_progress_bar_background_".escape($recording_uuid)."' class='playback_progress_bar_background' onclick=\"recording_seek(event,'".escape($recording_uuid)."')\" style='cursor: pointer; height: 20px; background-color: #e0e0e0; border-radius: 3px; position: relative; overflow: hidden;'>\n";
+				echo "            <span class='playback_progress_bar' id='recording_progress_".escape($recording_uuid)."' style='display: block; height: 100%; background-color: #4a90e2; width: 0%; transition: width 0.1s;'></span>\n";
+				echo "        </div>\n";
+				echo "    </div>\n";
+			}
 			
 			// Hidden audio element
 			echo "    <audio id='recording_audio_".escape($recording_uuid)."' style='display: none;' preload='metadata' ontimeupdate=\"update_progress('".escape($recording_uuid)."')\" onended=\"recording_reset('".escape($recording_uuid)."');\" src=\"".PROJECT_PATH."/app/recordings/recordings.php?action=download&type=rec&id=".urlencode($recording_uuid)."\" type='".$recording_type."'></audio>\n";
