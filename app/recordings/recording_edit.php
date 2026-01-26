@@ -538,7 +538,7 @@
 	if ($speech_engine === 'inworld' && !empty($voices)) {
 ?>
 <script>
-// Add CSS for voice select dynamic sizing and hide toggle selects
+// Add CSS for voice select dynamic sizing
 const style = document.createElement('style');
 style.textContent = `
 	/* Voice select starts at normal size */
@@ -552,85 +552,8 @@ style.textContent = `
 		width: 600px !important;
 		max-width: 100% !important;
 	}
-	
-	/* Hide the select dropdown when inside a switch - use !important to override formfld */
-	.switch select {
-		display: none !important;
-		opacity: 0 !important;
-		position: absolute !important;
-		width: 0 !important;
-		height: 0 !important;
-	}
-	
-	/* Complete Toggle Switch Styles */
-	.switch {
-		position: relative;
-		display: inline-block;
-		width: 60px;
-		height: 30px;
-		vertical-align: middle;
-	}
-	
-	.switch .slider {
-		position: absolute;
-		cursor: pointer;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: #ccc;
-		transition: .4s;
-		border-radius: 30px;
-	}
-	
-	.switch .slider:before {
-		position: absolute;
-		content: "";
-		height: 22px;
-		width: 22px;
-		left: 4px;
-		bottom: 4px;
-		background-color: white;
-		transition: .4s;
-		border-radius: 50%;
-	}
-	
-	.switch.checked .slider {
-		background-color: #00bfff;
-	}
-	
-	.switch.checked .slider:before {
-		transform: translateX(30px);
-	}
 `;
 document.head.appendChild(style);
-
-// Make toggle switches work with FusionPBX theme
-document.addEventListener('DOMContentLoaded', function() {
-	// Handle toggle functionality for switches
-	document.querySelectorAll('.switch').forEach(function(switchElem) {
-		const select = switchElem.querySelector('select');
-		const slider = switchElem.querySelector('.slider');
-		
-		if (select && slider) {
-			// Set initial state based on select value
-			if (select.value === 'true') {
-				switchElem.classList.add('checked');
-			}
-			
-			// Toggle on slider click
-			slider.addEventListener('click', function() {
-				if (select.value === 'true') {
-					select.value = 'false';
-					switchElem.classList.remove('checked');
-				} else {
-					select.value = 'true';
-					switchElem.classList.add('checked');
-				}
-			});
-		}
-	});
-});
 
 // Build Inworld voices data from PHP
 const inworldVoices = {};
@@ -656,7 +579,9 @@ const languageNames = {
 	'ko': 'Korean (한국어)',
 	'nl': 'Dutch (Nederlands)',
 	'ru': 'Russian (Русский)',
-	'hi': 'Hindi (हिन्दी)'
+	'hi': 'Hindi (हिन्दी)',
+	'he': 'Hebrew (עברית)',
+	'ar': 'Arabic (العربية)'
 };
 
 // Get unique languages from voices
