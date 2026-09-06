@@ -72,7 +72,7 @@
 	$paging_group_mute = 'true';
 	$paging_group_destination_status = '';
 	$paging_group_hangup_all = 'true';
-	$paging_group_schedule_hangup = '';
+	$paging_group_timeout = '';
 	$paging_group_enabled = 'true';
 	$paging_group_description = '';
 	$paging_group_destinations = [];
@@ -92,7 +92,7 @@
 		$paging_group_mute = $_POST["paging_group_mute"] ?? null;
 		$paging_group_destination_status = $_POST["paging_group_destination_status"] ?? null;
 		$paging_group_hangup_all = $_POST["paging_group_hangup_all"] ?? null;
-		$paging_group_schedule_hangup = $_POST["paging_group_schedule_hangup"] ?? null;
+		$paging_group_timeout = $_POST["paging_group_timeout"] ?? null;
 		$paging_group_enabled = $_POST["paging_group_enabled"] ?? null;
 		$paging_group_description = $_POST["paging_group_description"] ?? null;
 		$paging_group_destinations_delete = $_POST["paging_group_destinations_delete"] ?? null;
@@ -159,7 +159,7 @@
 			//if (strlen($paging_group_mute) == 0) { $msg .= $text['message-required']." ".$text['label-paging_group_mute']."<br>\n"; }
 			//if (strlen($paging_group_destination_status) == 0) { $msg .= $text['message-required']." ".$text['label-paging_group_destination_status']."<br>\n"; }
 			//if (strlen($paging_group_hangup_all) == 0) { $msg .= $text['message-required']." ".$text['label-paging_group_hangup_all']."<br>\n"; }
-			//if (strlen($paging_group_schedule_hangup) == 0) { $msg .= $text['message-required']." ".$text['label-paging_group_schedule_hangup']."<br>\n"; }
+			//if (strlen($paging_group_timeout) == 0) { $msg .= $text['message-required']." ".$text['label-paging_group_timeout']."<br>\n"; }
 			//if (strlen($paging_group_enabled) == 0) { $msg .= $text['message-required']." ".$text['label-paging_group_enabled']."<br>\n"; }
 			//if (empty($paging_group_description)) { $msg .= $text['message-required']." ".$text['label-paging_group_description']."<br>\n"; }
 			if (!empty($msg) && empty($_POST["persistformvar"])) {
@@ -209,8 +209,8 @@
 			if ($paging_group_hangup_all) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"api_hangup_hook=conference page-\${destination_number}@\${domain_name} hup all\" />\n";
 			}
-			if (!empty($paging_group_schedule_hangup) && is_numeric($paging_group_schedule_hangup) && $paging_group_schedule_hangup > 0) {
-				$dialplan_xml .= "		<action application=\"set\" data=\"execute_on_answer=sched_hangup +".xml::sanitize($paging_group_schedule_hangup)." allotted_timeout\" />\n";
+			if (!empty($paging_group_timeout) && is_numeric($paging_group_timeout) && $paging_group_timeout > 0) {
+				$dialplan_xml .= "		<action application=\"set\" data=\"execute_on_answer=sched_hangup +".xml::sanitize($paging_group_timeout)." allotted_timeout\" />\n";
 			}
 			$dialplan_xml .= "		<action application=\"lua\" data=\"page.lua\" />\n";
 			$dialplan_xml .= "	</condition>\n";
@@ -242,7 +242,7 @@
 			$array['paging_groups'][0]['paging_group_mute'] = $paging_group_mute;
 			$array['paging_groups'][0]['paging_group_destination_status'] = $paging_group_destination_status;
 			$array['paging_groups'][0]['paging_group_hangup_all'] = $paging_group_hangup_all;
-			$array['paging_groups'][0]['paging_group_schedule_hangup'] = $paging_group_schedule_hangup;
+			$array['paging_groups'][0]['paging_group_timeout'] = $paging_group_timeout;
 			$array['paging_groups'][0]['paging_group_enabled'] = $paging_group_enabled;
 			$array['paging_groups'][0]['paging_group_description'] = $paging_group_description;
 			$y = 0;
@@ -315,7 +315,7 @@
 		$sql .= " paging_group_mute , ";
 		$sql .= " paging_group_destination_status , ";
 		$sql .= " paging_group_hangup_all , ";
-		$sql .= " paging_group_schedule_hangup, ";
+		$sql .= " paging_group_timeout, ";
 		$sql .= " paging_group_enabled , ";
 		$sql .= " paging_group_description ";
 		$sql .= "from v_paging_groups ";
@@ -334,7 +334,7 @@
 			$paging_group_mute = $row["paging_group_mute"];
 			$paging_group_destination_status = $row["paging_group_destination_status"];
 			$paging_group_hangup_all = $row["paging_group_hangup_all"];
-			$paging_group_schedule_hangup = $row["paging_group_schedule_hangup"];
+			$paging_group_timeout = $row["paging_group_timeout"];
 			$paging_group_enabled = $row["paging_group_enabled"];
 			$paging_group_description = $row["paging_group_description"];
 		}
@@ -447,17 +447,6 @@
 	echo "	<input class='formfld' type='text' name='paging_group_extension' maxlength='255' value='".escape($paging_group_extension)."'>\n";
 	echo "<br />\n";
 	echo $text['description-paging_group_extension']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-paging_group_pin_number']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='paging_group_pin_number' maxlength='255' value='".escape($paging_group_pin_number)."'>\n";
-	echo "<br />\n";
-	echo $text['description-paging_group_pin_number']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -605,6 +594,17 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-paging_group_pin_number']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "	<input class='formfld' type='text' name='paging_group_pin_number' maxlength='255' value='".escape($paging_group_pin_number)."'>\n";
+	echo "<br />\n";
+	echo $text['description-paging_group_pin_number']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
 	echo "	".$text['label-paging_group_caller_id_name']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
@@ -722,12 +722,12 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-paging_group_schedule_hangup']."\n";
+	echo "	".$text['label-paging_group_timeout']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='paging_group_schedule_hangup' maxlength='255' value='".escape($paging_group_schedule_hangup)."'>\n";
+	echo "  <input class='formfld' type='text' name='paging_group_timeout' maxlength='255' value='".escape($paging_group_timeout)."'>\n";
 	echo "<br />\n";
-	echo $text['description-paging_group_schedule_hangup']."\n";
+	echo $text['description-paging_group_timeout']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

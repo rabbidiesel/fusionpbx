@@ -150,7 +150,7 @@
 	$sql .= "cast(paging_group_mute as text), ";
 	$sql .= "cast(paging_group_destination_status as text), ";
 	$sql .= "cast(paging_group_hangup_all as text), ";
-	$sql .= "paging_group_schedule_hangup, ";
+	$sql .= "cast(paging_group_timeout as text), ";
 	$sql .= "cast(paging_group_enabled as text), ";
 	$sql .= "paging_group_description ";
 	$sql .= "from v_paging_groups ";
@@ -233,7 +233,7 @@
 	echo th_order_by('paging_group_delay', $text['label-paging_group_delay'], $order_by, $order, null, "class='center'", $query_string);
 	echo th_order_by('paging_group_mute', $text['label-paging_group_mute'], $order_by, $order, null, "class='center'", $query_string);
 	echo th_order_by('paging_group_hangup_all', $text['label-paging_group_hangup_all'], $order_by, $order, null, "class='center'", $query_string);
-	echo th_order_by('paging_group_schedule_hangup', $text['label-paging_group_schedule_hangup'], $order_by, $order, null, null, $query_string);
+	echo th_order_by('paging_group_timeout', $text['label-paging_group_timeout'], $order_by, $order, null, null, $query_string);
 	echo th_order_by('paging_group_enabled', $text['label-enabled'], $order_by, $order, null, "class='center'", $query_string);
 	echo "	<th class='hide-sm-dn'>".$text['label-paging_group_description']."</th>\n";
 	if (permission_exists('paging_group_edit') && $list_row_edit_button == 'true') {
@@ -266,7 +266,7 @@
 			echo "	<td class='center'>".$text['label-'.$row['paging_group_delay']]."&nbsp;</td>\n";
 			echo "	<td class='center'>".$text['label-'.$row['paging_group_mute']]."&nbsp;</td>\n";
 			echo "	<td class='center'>".$text['label-'.$row['paging_group_hangup_all']]."&nbsp;</td>\n";
-			echo "	<td>".escape($row['paging_group_schedule_hangup'])."</td>\n";
+			echo "	<td>".escape($row['paging_group_timeout'])."</td>\n";
 			if (permission_exists('paging_group_edit')) {
 				echo "	<td class='no-link center'>\n";
 				echo button::create(['type'=>'submit','class'=>'link','label'=>$text['label-'.$row['paging_group_enabled']],'title'=>$text['button-toggle'],'onclick'=>"list_self_check('checkbox_".$x."'); list_action_set('toggle'); list_form_submit('form_list')"]);

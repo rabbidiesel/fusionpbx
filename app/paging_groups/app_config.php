@@ -127,7 +127,8 @@
 		$apps[$x]['db'][$y]['fields'][$z]['toggle'] = ['true','false'];
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "When original page caller hangs up, then end all related calls.";
 		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = "paging_group_schedule_hangup";
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "paging_group_timeout";
+		$apps[$x]['db'][$y]['fields'][$z]['name']['deprecated'] = "paging_group_schedule_hangup";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
 		$apps[$x]['db'][$y]['fields'][$z]['search_by'] = "";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Set scheduled limit for the call in seconds.";
