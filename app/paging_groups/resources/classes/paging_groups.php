@@ -45,20 +45,22 @@ if (!class_exists('paging_groups')) {
 		private $toggle_values;
 		private $description_field;
 		private $location;
+		private $permission_prefix;
+		private $uuid_prefix;
 
 		/**
 		 * called when the object is created
 		 */
 		public function __construct() {
 			//assign the variables
-				$this->app_name = 'paging';
+				$this->app_name = 'paging_groups';
 				$this->app_uuid = 'bae044dd-e773-471c-a890-5220ebca3bc9';
-				$this->name = 'paging';
-				$this->table = 'paging';
-				$this->toggle_field = 'paging_enabled';
+				$this->name = 'paging_group';
+				$this->table = 'paging_groups';
+				$this->toggle_field = 'paging_group_enabled';
 				$this->toggle_values = ['true','false'];
-				$this->description_field = 'paging_description';
-				$this->location = 'paging.php';
+				$this->description_field = 'paging_group_description';
+				$this->location = 'paging_groups.php';
 		}
 
 		/**
@@ -130,9 +132,9 @@ if (!class_exists('paging_groups')) {
 		public function delete_destinations($records) {
 
 			//assign private variables
-			$this->permission_prefix = 'paging_destination_';
-			$this->table = 'paging_destinations';
-			$this->uuid_prefix = 'paging_destination_';
+			$this->permission_prefix = 'paging_group_destination_';
+			$this->table = 'paging_group_destinations';
+			$this->uuid_prefix = 'paging_group_destination_';
 
 			if (permission_exists($this->permission_prefix . 'delete')) {
 
@@ -144,7 +146,7 @@ if (!class_exists('paging_groups')) {
 				$token = new token;
 				if (!$token->validate($_SERVER['PHP_SELF'])) {
 					message::add($text['message-invalid_token'], 'negative');
-					header('Location: ' . $this->list_page);
+					header('Location: ' . $this->location);
 					exit;
 				}
 
@@ -171,10 +173,10 @@ if (!class_exists('paging_groups')) {
 					if (!empty($array) && is_array($array) && @sizeof($array) != 0) {
 
 						//execute delete
-						$this->database = new database;
-						$this->database->app_name = $this->app_name;
-						$this->database->app_uuid = $this->app_uuid;
-						$this->database->delete($array);
+						$database = new database;
+						$database->app_name = $this->app_name;
+						$database->app_uuid = $this->app_uuid;
+						$database->delete($array);
 						unset($array);
 
 						//apply settings reminder

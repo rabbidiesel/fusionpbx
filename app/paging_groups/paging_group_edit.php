@@ -105,7 +105,7 @@
 			$token = new token;
 			if (!$token->validate($_SERVER['PHP_SELF'])) {
 				message::add($text['message-invalid_token'],'negative');
-				header('Location: paging.php');
+				header('Location: paging_groups.php');
 				exit;
 			}
 
@@ -270,7 +270,7 @@
 			}
 
 		//save the data
-			$database->app_name = 'paging';
+			$database->app_name = 'paging_groups';
 			$database->app_uuid = 'bae044dd-e773-471c-a890-5220ebca3bc9';
 			$database->save($array);
 
@@ -294,7 +294,7 @@
 				if ($action == "update") {
 					$_SESSION["message"] = $text['message-update'];
 				}
-				header('Location: paging_edit.php?id='.urlencode($paging_group_uuid));
+				header('Location: paging_group_edit.php?id='.urlencode($paging_group_uuid));
 				return;
 			}
 	}
